@@ -1,0 +1,11 @@
+#AI related
+progress/
+.claudeignore
+.clauderules
+.claude/
+.agent/
+
+# Dart related
+dart/build/
+dart/.dart_tool/
+dart/.idea/
