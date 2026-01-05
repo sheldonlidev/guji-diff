@@ -1,5 +1,8 @@
 # Guji-Diff
 
+[![pub package](https://img.shields.io/pub/v/guji_diff.svg)](https://pub.dev/packages/guji_diff)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 古籍文本校勘代码库 (Ancient Text Collation Library)
 
 给定两段或多段文字，`guji-diff` 能够高效输出它们之间的异同。该库专为古籍处理设计，支持繁简转换、异体字识别、标点忽略等高级功能，并**支持多平台部署**（原生应用和 Web）。
@@ -48,22 +51,37 @@
 
 ## 🚀 快速开始
 
-### 安装依赖
+### 安装
+
+**从 pub.dev 安装（推荐）**：
 
 在你的 `pubspec.yaml` 中添加：
 
 ```yaml
 dependencies:
-  guji_diff:
-    path: ../guji-diff/dart  # 本地路径
-    # 或者从 pub.dev 安装（发布后）
-    # guji_diff: ^0.1.0
+  guji_diff: ^0.1.0
 ```
 
 然后运行：
 
 ```bash
 flutter pub get
+```
+
+**其他安装方式**：
+
+```yaml
+dependencies:
+  # 从 Git 仓库安装
+  guji_diff:
+    git:
+      url: https://github.com/sheldonlidev/guji-diff.git
+      path: dart
+      ref: main
+
+  # 本地开发
+  guji_diff:
+    path: ../guji-diff/dart
 ```
 
 ---
@@ -468,9 +486,32 @@ guji-diff/
 
 ---
 
+## 📦 Package 信息
+
+- **Package 名称**: `guji_diff`
+- **当前版本**: `0.1.0`
+- **pub.dev 链接**: [https://pub.dev/packages/guji_diff](https://pub.dev/packages/guji_diff)
+- **API 文档**: [https://pub.dev/documentation/guji_diff/latest/](https://pub.dev/documentation/guji_diff/latest/)
+- **License**: Apache 2.0
+
+### 版本历史
+
+#### 0.1.0 (2026-01-05)
+- ✅ 初始发布
+- ✅ 逐字校勘功能
+- ✅ 结构化校勘功能
+- ✅ 统计分析和模式识别
+- ✅ 平台自适应 OpenCC 集成（原生 FFI + Web JS）
+- ✅ 繁简转换支持
+- ✅ 异体字映射
+- ✅ 标点处理选项
+
+---
+
 ## 📚 相关文档
 
 - [WEB_DEPLOYMENT_GUIDE.md](WEB_DEPLOYMENT_GUIDE.md) - Web 部署详细指南
+- [PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md) - pub.dev 发布指南
 - [progress/platform_adaptive_opencc.md](progress/platform_adaptive_opencc.md) - 平台自适应技术实现
 - [progress/task_list.md](progress/task_list.md) - 项目开发进度
 
@@ -486,7 +527,9 @@ guji-diff/
 
 ## 📄 许可证
 
-MIT License
+Apache License 2.0
+
+详见 [LICENSE](LICENSE) 文件。
 
 ---
 
