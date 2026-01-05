@@ -1,4 +1,6 @@
 import 'package:diff_match_patch/diff_match_patch.dart';
+import 'collation_options.dart';
+import 'text_normalizer.dart';
 
 /// 表示校勘差异的类型
 enum CollationType { insert, delete, equal }
@@ -19,8 +21,25 @@ class VerbatimCollation {
   final DiffMatchPatch _dmp = DiffMatchPatch();
 
   /// 比较两个文本并返回差异列表
-  List<CollationChange> compare(String text1, String text2) {
-    final diffs = _dmp.diff(text1, text2);
+  List<CollationChange> compare(
+    String text1,
+    String text2, {
+    CollationOptions options = CollationOptions.defaultOptions,
+  }) {
+    final s1 = TextNormalizer.normalize(
+      text1,
+      ignorePunctuation: options.ignorePunctuation,
+      ignoreTraditional: options.ignoreTraditional,
+      ignoreVariants: options.ignoreVariants,
+    );
+    final s2 = TextNormalizer.normalize(
+      text2,
+      ignorePunctuation: options.ignorePunctuation,
+      ignoreTraditional: options.ignoreTraditional,
+      ignoreVariants: options.ignoreVariants,
+    );
+
+    final diffs = _dmp.diff(s1, s2);
     _dmp.diffCleanupSemantic(diffs);
 
     return diffs.map((d) {

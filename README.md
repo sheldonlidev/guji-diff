@@ -56,5 +56,120 @@
 ]
 ```
 
+## 🚀 快速上手 (Dart)
+
+### 1. 添加依赖
+将 `guji_diff` 添加到你的 `pubspec.yaml`:
+```yaml
+dependencies:
+  guji_diff:
+    path: ./dart # 目前作为本地 package 使用
+```
+
+### 2. 代码示例 (API)
+
+#### 逐字校勘 (含古籍优化)
+```dart
+import 'package:guji_diff/guji_diff.dart';
+
+void main() {
+  final engine = VerbatimCollation();
+  
+  // 配置校勘选项
+  final options = CollationOptions(
+    ignorePunctuation: true,  // 忽略标点
+    ignoreTraditional: true,  // 繁简等价
+    ignoreVariants: true,     // 异体字等价
+  );
+
+  final text1 = '學而時習之，灋箇中。';
+  final text2 = '学而时习之法个中';
+
+  final changes = engine.compare(text1, text2, options: options);
+  
+  for (var change in changes) {
+    print('${change.type}: ${change.text}');
+  }
+}
+```
+
+#### 结构化校勘 (JSON Patch)
+```dart
+import 'package:guji_diff/guji_diff.dart';
+
+void main() {
+  final doc1 = Document(chapters: [
+    Chapter(title: '第一章', paragraphs: [
+      Paragraph(id: 'p1', content: '原始内容'),
+    ])
+  ]);
+
+  final doc2 = Document(chapters: [
+    Chapter(title: '第一章', paragraphs: [
+      Paragraph(id: 'p1', content: '修正内容'),
+    ])
+  ]);
+
+  final engine = StructuralCollation();
+  final diffs = engine.compareDocuments(doc1, doc2);
+  
+  // 转换为标准的 JSON Patch (RFC 6902)
+  final patch = JsonPatchConverter.convert(diffs);
+  print(patch);
+}
+```
+
+### 3. 命令行工具 (CLI)
+你可以直接在终端运行校勘命令：
+
+#### 逐字比对 (字符串)
+```bash
+# 开启繁简等价和标点忽略
+dart run dart/bin/guji_diff.dart "學而時習之" "学而时习之" --ignore-traditional --ignore-punctuation
+```
+
+#### 数据分析报告 (JSON)
+通过 `--analyze` 参数生成统计报告：
+
+```bash
+dart run dart/bin/guji_diff.dart "大学之道在明明得" "大学之道在明明德" --analyze
+```
+
+**输出示例**:
+```json
+Statistical Analysis Report (JSON):
+{
+  "similarity": 0.875,
+  "patterns": {
+    "得->德": 1
+  },
+  "totalChanges": 1
+}
+```
+
+#### 结构化比对 (JSON 文件)
+你可以对比两个结构化的 JSON 文档模型：
+
+```bash
+dart run dart/bin/guji_diff.dart doc1.json doc2.json --structural
+```
+
+**输出示例 (JSON Patch)**:
+```json
+Structural Collation Results (JSON Patch):
+[
+  {
+    "op": "replace",
+    "path": "/chapters/0/title",
+    "value": "第一章修正"
+  },
+  {
+    "op": "replace",
+    "path": "/chapters/0/paragraphs/0/content",
+    "value": "这是修改后的内容"
+  }
+]
+```
+
 ---
 底层算法致谢：[google/diff-match-patch](https://github.com/google/diff-match-patch)
