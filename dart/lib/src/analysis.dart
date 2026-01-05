@@ -26,35 +26,18 @@ class SimilarityScorer {
   static double calculate(List<CollationChange> changes) {
     if (changes.isEmpty) return 1.0;
 
-    int equalCount = 0;
-    int totalCount = 0;
-
-    for (var change in changes) {
-      final len = change.text.length;
-      totalCount += len;
-      if (change.type == CollationType.equal) {
-        equalCount += len;
-      } else {
-        // 差异部分：由于 diff-match-patch 的特性，
-        // 插入和删除可能不完全对称，这里取一个简单的权重模型
-        // totalCount 已经在循环外或按字符累计
-      }
-    }
-
-    // 相似度 = 相同部分 / (相同部分 + 差异部分)
-    // 这里的 totalCount 实际上包含了所有 type (equal, insert, delete) 的字符总数
-    // 我们定义相似度为：相同字符数 / 文本 1 和 文本 2 的平均长度
-    // 或者更简单的：equalCount / (equalCount + 差异导致的字符总数的影响)
-
     // 我们采用一种常用公式：2 * M / (L1 + L2)
     // M 是匹配字符数
     // L1 = equal + delete, L2 = equal + insert
+    int equalCount = 0;
     int l1 = 0;
     int l2 = 0;
     for (var change in changes) {
       if (change.type == CollationType.equal) {
-        l1 += change.text.length;
-        l2 += change.text.length;
+        final len = change.text.length;
+        equalCount += len;
+        l1 += len;
+        l2 += len;
       } else if (change.type == CollationType.delete) {
         l1 += change.text.length;
       } else if (change.type == CollationType.insert) {

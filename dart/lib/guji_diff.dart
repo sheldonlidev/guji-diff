@@ -1,5 +1,3 @@
-library guji_diff;
-
 export 'src/verbatim_collation.dart';
 export 'src/collation_options.dart';
 export 'src/text_normalizer.dart';
