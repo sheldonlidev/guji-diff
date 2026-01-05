@@ -1,4 +1,4 @@
-import 'package:opencc/opencc.dart';
+import 'opencc/opencc.dart';
 
 /// 文字归一化处理工具
 class TextNormalizer {
@@ -9,19 +9,17 @@ class TextNormalizer {
     r'()*+,\-./:;<=>?@\[\\\]^_`{|}~]',
   );
 
-  /// 简单的异体字映射表
-  /// 在 OpenCC 不可用或作为补充时使用
-  static const Map<String, String> _variantMap = {
+  /// 异体字映射表
+  /// 用于 OpenCC 不支持的古籍异体字
+  /// 这些字符即使在 OpenCC 中也可能没有对应的转换
+  static const Map<String, String> _variantCharMap = {
     '箇': '个',
-    '盃': '杯',
-    '灋': '法',
-    '羣': '群',
-    '學': '学',
-    '時': '时',
-    '習': '习',
+    // 可以继续添加更多古籍异体字
   };
 
-  static bool? _isOpenCCAvailable;
+  /// 平台自适应的 OpenCC 实例
+  /// Web 平台使用 OpenCC-JS，原生平台使用 OpenCC FFI
+  static OpenCCInterface? _openccInstance;
 
   /// 根据配置对文本进行预处理
   /// 返回处理后的文本
@@ -33,29 +31,18 @@ class TextNormalizer {
   }) {
     String result = text;
 
-    // 如果启用了异体字忽略，或者启用了繁简忽略但 OpenCC 不可用，则使用手动映射表
-    final useFallbackMap =
-        ignoreVariants || (ignoreTraditional && !(_checkOpenCC()));
-
-    if (useFallbackMap) {
-      _variantMap.forEach((variant, standard) {
-        result = result.replaceAll(variant, standard);
-      });
+    // 1. 先处理异体字（在繁简转换之前）
+    //    因为某些异体字 OpenCC 可能不认识
+    if (ignoreVariants) {
+      result = _applyVariantMapping(result);
     }
 
-    if (ignoreTraditional && _checkOpenCC()) {
-      try {
-        final converter = ZhConverter('t2s');
-        result = converter.convert(result);
-      } catch (e) {
-        _isOpenCCAvailable = false;
-        // 重新执行一次 fallback (虽然逻辑上上面已经处理了部分，但为了安全)
-        _variantMap.forEach((variant, standard) {
-          result = result.replaceAll(variant, standard);
-        });
-      }
+    // 2. 处理繁简转换（使用 OpenCC）
+    if (ignoreTraditional) {
+      result = _convertTraditionalToSimplified(result);
     }
 
+    // 3. 处理标点符号
     if (ignorePunctuation) {
       result = result.replaceAll(_punctuationRegExp, '');
     }
@@ -63,19 +50,74 @@ class TextNormalizer {
     return result;
   }
 
-  static bool _checkOpenCC() {
-    if (_isOpenCCAvailable != null) return _isOpenCCAvailable!;
-    try {
-      // 尝试初始化一个最小的对象来检测原生库是否可用
-      // 注意：有的 package 可能在构造时不报错，但在调用 convert 时报错
-      ZhConverter('t2s');
-      _isOpenCCAvailable = true;
-    } catch (e) {
-      _isOpenCCAvailable = false;
-      print(
-        '[GujiDiff] Warning: OpenCC native library not found. Falling back to simple normalization.',
+  /// 使用 OpenCC 进行繁简转换
+  /// 如果 OpenCC 不可用，会抛出详细的错误信息
+  static String _convertTraditionalToSimplified(String text) {
+    // 懒加载 OpenCC 实例
+    _openccInstance ??= createOpenCC();
+
+    // 检查 OpenCC 是否可用
+    if (!_openccInstance!.isAvailable()) {
+      throw StateError(
+        'OpenCC is not available on this platform. '
+        'Platform: ${_openccInstance!.getPlatformName()}\n'
+        'See TextNormalizer logs for details.',
       );
     }
-    return _isOpenCCAvailable!;
+
+    try {
+      return _openccInstance!.traditionalToSimplified(text);
+    } on OpenCCNotAvailableException catch (e) {
+      // 记录详细错误
+      _logError('OpenCC conversion failed:\n$e');
+      rethrow;
+    } catch (e) {
+      _logError('Unexpected error during conversion: $e');
+      rethrow;
+    }
   }
+
+  /// 应用异体字映射
+  /// 用于 OpenCC 不支持的古籍异体字
+  static String _applyVariantMapping(String text) {
+    String result = text;
+    _variantCharMap.forEach((variant, standard) {
+      result = result.replaceAll(variant, standard);
+    });
+    return result;
+  }
+
+  /// 记录错误日志
+  static void _logError(String message) {
+    // ignore: avoid_print
+    print('[GujiDiff] ERROR: $message');
+  }
+
+  /// 重置 OpenCC 实例（用于测试）
+  static void resetOpenCCStatus() {
+    _openccInstance = null;
+  }
+
+  /// 获取当前 OpenCC 状态（用于诊断）
+  static OpenCCStatus? get openccStatus {
+    _openccInstance ??= createOpenCC();
+    return _openccInstance!.isAvailable()
+        ? OpenCCStatus.available
+        : OpenCCStatus.unavailable;
+  }
+
+  /// 获取平台信息（用于诊断）
+  static String getPlatformName() {
+    _openccInstance ??= createOpenCC();
+    return _openccInstance!.getPlatformName();
+  }
+}
+
+/// OpenCC 可用性状态枚举
+enum OpenCCStatus {
+  /// OpenCC 可用
+  available,
+
+  /// OpenCC 不可用
+  unavailable,
 }
