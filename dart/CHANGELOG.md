@@ -1,3 +1,11 @@
+## 0.1.1
+
+* Refactored collation feature tests for better coverage.
+* Improved homepage UI with native Flutter widgets.
+* Refined statistical analysis (`SimilarityScorer` & `ChangePatternAnalyzer`).
+* Fixed various lint warnings and code quality issues.
+* Updated documentation and README for better clarity.
+
 ## 0.1.0
 
 * Initial release
