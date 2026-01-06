@@ -47,16 +47,18 @@ class OpenCCWeb implements OpenCCInterface {
       // 监听加载失败
       script.onerror = (web.Event e) {
         _loadError = 'Failed to load OpenCC-JS from $_scriptUrl';
-        if (!_loadCompleter.isCompleted)
+        if (!_loadCompleter.isCompleted) {
           _loadCompleter.completeError(_loadError!);
+        }
       }.toJS;
 
       // 插入到 head
       web.document.head!.appendChild(script);
     } catch (e) {
       _loadError = 'Error injecting script: $e';
-      if (!_loadCompleter.isCompleted)
+      if (!_loadCompleter.isCompleted) {
         _loadCompleter.completeError(_loadError!);
+      }
     }
   }
 
@@ -147,7 +149,7 @@ class OpenCCWeb implements OpenCCInterface {
         _jsSet(options, 'locale'.toJS, locale);
 
         final converter = (factoryFn as JSFunction).callAsFunction(
-          opencc as JSObject,
+          opencc,
           options,
         );
         if (converter != null && converter.isA<JSFunction>()) {

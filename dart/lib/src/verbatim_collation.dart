@@ -62,9 +62,31 @@ class VerbatimCollation {
 
   /// 以 Unified Diff 格式输出（简化版）
   String toUnifiedDiff(String text1, String text2) {
-    // final diffs = _dmp.diff(text1, text2);
-    // _dmp.diffCleanupSemantic(diffs);
-    // TODO: 实现自定义的 Unified Diff 输出格式
-    return 'Not implemented yet';
+    final s1 = TextNormalizer.normalize(
+      text1,
+      ignorePunctuation: false,
+      ignoreTraditional: false,
+      ignoreVariants: false,
+    );
+    final s2 = TextNormalizer.normalize(
+      text2,
+      ignorePunctuation: false,
+      ignoreTraditional: false,
+      ignoreVariants: false,
+    );
+    final diffs = _dmp.diff(s1, s2);
+    _dmp.diffCleanupSemantic(diffs);
+
+    final buffer = StringBuffer();
+    for (var d in diffs) {
+      if (d.operation == DIFF_INSERT) {
+        buffer.write('[+] ${d.text}\n');
+      } else if (d.operation == DIFF_DELETE) {
+        buffer.write('[-] ${d.text}\n');
+      } else {
+        buffer.write('    ${d.text}\n');
+      }
+    }
+    return buffer.toString();
   }
 }
