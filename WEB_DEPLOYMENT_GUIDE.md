@@ -44,39 +44,20 @@ final result = TextNormalizer.normalize(
 编辑 `web/index.html`，在 `<head>` 部分添加：
 
 ```html
-<!-- OpenCC-JS Library -->
+<!-- OpenCC-JS Library (这是唯一需要的配置!) -->
 <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
-
-<!-- OpenCC Bridge (Dart <-> JS 桥接) -->
-<script src="opencc_bridge.js"></script>
 ```
 
-### 2. 确保 opencc_bridge.js 存在
+> **重要更新**: 不再需要 `opencc_bridge.js` 桥接文件！库现在使用 Dart 3.3+ 的 `dart:js_interop` 直接调用 OpenCC-JS，自动注入和管理。
 
-该文件已在 `dart/web/opencc_bridge.js`，内容如下：
-
-```javascript
-function checkOpenCCExists() {
-  return typeof OpenCC !== 'undefined' && typeof OpenCC.Converter !== 'undefined';
-}
-
-function callOpenCCConvert(text, from, to) {
-  const converter = OpenCC.Converter({ from: from, to: to });
-  return converter(text);
-}
-
-window.checkOpenCCExists = checkOpenCCExists;
-window.callOpenCCConvert = callOpenCCConvert;
-```
-
-### 3. 编译为 Web 应用
+### 2. 编译为 Web 应用
 
 ```bash
 cd dart
 flutter build web
 ```
 
-### 4. 部署到 Web 服务器
+### 3. 部署到 Web 服务器
 
 将 `build/web` 目录的内容部署到任何静态 Web 服务器：
 
@@ -100,11 +81,10 @@ dart/
 │       │   ├── opencc.dart           # 条件导出入口
 │       │   ├── opencc_interface.dart  # 平台抽象接口
 │       │   ├── opencc_native.dart     # 原生平台实现 (FFI)
-│       │   └── opencc_web.dart        # Web 平台实现 (JS)
+│       │   └── opencc_web.dart        # Web 平台实现 (dart:js_interop)
 │       └── text_normalizer.dart       # 使用 opencc
 └── web/
-    ├── index.html                     # 引入 OpenCC-JS
-    └── opencc_bridge.js               # Dart <-> JS 桥接
+    └── index.html                     # 引入 OpenCC-JS
 ```
 
 ## 使用示例
@@ -152,7 +132,7 @@ flutter pub get
 
 **Web 应用（自动使用 OpenCC-JS）：**
 
-1. 编辑 Web 应用的 `web/index.html`：
+1. 编辑 Web 应用的 `web/index.html`，只需添加 OpenCC-JS 库：
 
 ```html
 <!DOCTYPE html>
@@ -160,11 +140,8 @@ flutter pub get
 <head>
   <!-- 其他 meta 标签 -->
 
-  <!-- 添加 OpenCC-JS -->
+  <!-- 添加 OpenCC-JS (这是唯一需要的!) -->
   <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
-
-  <!-- 从 guji-diff 复制 opencc_bridge.js 到你的 web 目录 -->
-  <script src="opencc_bridge.js"></script>
 </head>
 <body>
   <!-- 你的应用 -->
@@ -172,9 +149,7 @@ flutter pub get
 </html>
 ```
 
-2. 从 `guji-diff/dart/web/opencc_bridge.js` 复制到你的项目的 `web/` 目录
-
-3. 使用相同的 API：
+2. 使用相同的 API（库会通过 `dart:js_interop` 自动调用）：
 
 ```dart
 import 'package:guji_diff/guji_diff.dart';
@@ -218,14 +193,12 @@ if (status == OpenCCStatus.available) {
 ```javascript
 // 在浏览器控制台执行
 console.log(typeof OpenCC);  // 应该是 'object'
-console.log(typeof checkOpenCCExists);  // 应该是 'function'
-checkOpenCCExists();  // 应该返回 true
+console.log(typeof OpenCC.Converter);  // 应该是 'function'
 ```
 
 **解决方案：**
 1. 确保 `index.html` 中正确引入了 OpenCC-JS
-2. 确保 `opencc_bridge.js` 被加载
-3. 检查网络请求，确保 CDN 可访问
+2. 检查网络请求，确保 CDN 可访问
 
 **问题：转换不工作**
 
@@ -272,12 +245,36 @@ cp node_modules/opencc-js/dist/umd/full.js dart/web/opencc.js
 <script src="opencc.js"></script>
 ```
 
+## 技术实现细节
+
+### Web 平台的自动化实现
+
+`opencc_web.dart` 使用 Dart 3.3+ 的 `dart:js_interop` API 直接与 OpenCC-JS 交互：
+
+```dart
+// 直接访问 window.OpenCC 全局对象
+@JS('window.OpenCC')
+external JSObject? get _openccGlobal;
+
+// 调用 OpenCC.Converter({ from, to }) 创建转换器
+final converter = OpenCC.Converter({ from: 'tw', to: 's' });
+
+// 执行转换
+final result = converter(text);
+```
+
+**自动脚本注入**：
+- 如果 HTML 中已引入 OpenCC-JS，库会检测到并直接使用
+- 如果未引入，库会自动创建 `<script>` 标签从 CDN 加载
+- 建议在 HTML 中手动引入以获得更好的性能和控制
+
 ## 总结
 
 ✅ **统一 API**：在所有平台使用相同的代码
 ✅ **自动适配**：编译时自动选择正确的实现
 ✅ **Web 友好**：使用 OpenCC-JS，无需编译
 ✅ **原生高效**：使用 OpenCC FFI，性能最优
-✅ **简单部署**：只需在 HTML 中添加两行代码
+✅ **简单部署**：只需在 HTML 中添加一行 `<script>` 标签
+✅ **现代化实现**：使用 `dart:js_interop` 代替旧的桥接方式
 
-你的库现在可以无缝支持 Web 和原生平台了！🎉
+你的库现在可以无缝支持 Web 和原生平台了！

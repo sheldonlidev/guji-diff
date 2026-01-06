@@ -142,103 +142,31 @@ flutter run -d ios      # 或 android
 
 ## 🌐 Web 平台使用
 
-### 步骤 1: 配置 HTML
+### 配置 HTML
 
-编辑你的 `web/index.html`，在 `<head>` 部分添加：
+在 `web/index.html` 的 `<head>` 部分添加 OpenCC-JS：
 
 ```html
-<!DOCTYPE html>
-<html>
-<head>
-  <!-- 其他 meta 标签 -->
-  <meta charset="UTF-8">
-  <title>Your App</title>
-
-  <!-- ⭐ 添加 OpenCC-JS 库 -->
-  <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
-
-  <!-- ⭐ 添加 Dart-JS 桥接脚本 -->
-  <script src="opencc_bridge.js"></script>
-
-  <!-- Flutter 初始化脚本 -->
-  <script src="flutter.js" defer></script>
-</head>
-<body>
-  <!-- 你的应用内容 -->
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
 ```
 
-### 步骤 2: 添加桥接文件
-
-从 `guji-diff/dart/web/opencc_bridge.js` 复制到你的项目 `web/` 目录：
-
-```bash
-# 如果是引用 guji-diff 库的项目
-cp path/to/guji-diff/dart/web/opencc_bridge.js web/
-```
-
-或者手动创建 `web/opencc_bridge.js`：
-
-```javascript
-/**
- * OpenCC JavaScript Bridge
- * 为 Dart 提供 OpenCC-JS 的桥接函数
- */
-
-function checkOpenCCExists() {
-  return typeof OpenCC !== 'undefined' && typeof OpenCC.Converter !== 'undefined';
-}
-
-function callOpenCCConvert(text, from, to) {
-  try {
-    if (!checkOpenCCExists()) {
-      throw new Error('OpenCC is not loaded');
-    }
-    const converter = OpenCC.Converter({ from: from, to: to });
-    return converter(text);
-  } catch (error) {
-    console.error('OpenCC conversion error:', error);
-    throw error;
-  }
-}
-
-// 暴露到全局作用域
-window.checkOpenCCExists = checkOpenCCExists;
-window.callOpenCCConvert = callOpenCCConvert;
-```
-
-### 步骤 3: 使用相同的代码
-
-Web 上的代码**与原生平台完全一样**，无需修改：
+就这么简单！代码与原生平台完全一样：
 
 ```dart
 import 'package:guji_diff/guji_diff.dart';
 
-void main() {
-  // 自动使用 OpenCC-JS（Web 平台）
-  final collation = VerbatimCollation(
-    '學而時習之',
-    '学而时习之',
-    options: CollationOptions(
-      ignoreTraditional: true,  // Web 上自动调用 OpenCC-JS
-    ),
-  );
-
-  print('相似度: ${collation.getSimilarity()}');
-}
+final collation = VerbatimCollation(
+  '學而時習之',
+  '学而时习之',
+  options: CollationOptions(ignoreTraditional: true),  // 自动使用 OpenCC-JS
+);
 ```
 
-### 步骤 4: 编译和运行
+### 编译运行
 
 ```bash
-# 开发模式
-flutter run -d chrome
-
-# 生产构建
-flutter build web
-
-# 部署 build/web 目录到服务器
+flutter run -d chrome      # 开发
+flutter build web          # 生产构建
 ```
 
 ---
@@ -374,87 +302,50 @@ dart run bin/guji_diff.dart doc1.json doc2.json --structural
 
 ## 🔍 诊断工具
 
-### 检查 OpenCC 状态
+检查 OpenCC 状态：
 
 ```dart
-import 'package:guji_diff/guji_diff.dart';
-
-void main() {
-  // 检查当前平台
-  print('Platform: ${TextNormalizer.getPlatformName()}');
-  // 原生: "Native (OpenCC FFI)"
-  // Web: "Web (OpenCC-JS)"
-
-  // 检查 OpenCC 是否可用
-  final status = TextNormalizer.openccStatus;
-  if (status == OpenCCStatus.available) {
-    print('✅ OpenCC 可用');
-  } else {
-    print('❌ OpenCC 不可用');
-  }
-}
+print(TextNormalizer.getPlatformName());  // "Native (OpenCC FFI)" 或 "Web (OpenCC-JS, Automated)"
+print(TextNormalizer.openccStatus);       // OpenCCStatus.available
 ```
 
-### Web 浏览器调试
-
-在浏览器控制台执行：
+Web 浏览器调试（在控制台）：
 
 ```javascript
-// 检查 OpenCC-JS 是否加载
-console.log(typeof OpenCC);  // 应该是 'object'
-
-// 检查桥接函数
-console.log(typeof checkOpenCCExists);  // 应该是 'function'
-checkOpenCCExists();  // 应该返回 true
-
-// 测试转换
-callOpenCCConvert('學習', 'tw', 's');  // 应该返回 '学习'
+console.log(typeof OpenCC);                              // 'object'
+const converter = OpenCC.Converter({ from: 'tw', to: 's' });
+console.log(converter('學習'));                           // '学习'
 ```
 
 ---
 
 ## ⚠️ 常见问题
 
-### Q1: 原生平台报错 "OpenCC native library is not available"
+### Q1: 原生平台编译失败
 
-**原因**：缺少 CMake 或 OpenCC 编译失败
-
-**解决方案**：
-1. 安装 CMake（见上文"前置要求"）
-2. 确保 CMake 在系统 PATH 中
-3. 运行 `flutter pub get` 重新编译
-4. 如果仍然失败，查看详细错误日志
+确保安装了 CMake：
+```bash
+cmake --version  # 检查是否已安装
+flutter pub get  # 重新编译
+```
 
 ### Q2: Web 平台转换不工作
 
-**检查清单**：
-1. ✅ `web/index.html` 中引入了 OpenCC-JS
-2. ✅ `web/opencc_bridge.js` 文件存在
-3. ✅ 浏览器控制台没有加载错误
-4. ✅ `checkOpenCCExists()` 返回 true
+在浏览器控制台检查：`typeof OpenCC` 应返回 `'object'`
 
-### Q3: 如何离线使用（不依赖 CDN）
-
-**自托管 OpenCC-JS**：
+### Q3: 离线部署（不用 CDN）
 
 ```bash
-# 下载 OpenCC-JS
 npm install opencc-js
-cp node_modules/opencc-js/dist/umd/full.js web/opencc.js
+cp node_modules/opencc-js/dist/umd/full.js web/
 ```
 
-修改 `web/index.html`：
-```html
-<script src="opencc.js"></script>  <!-- 使用本地文件 -->
-```
+在 HTML 中改用：`<script src="full.js"></script>`
 
-### Q4: 支持哪些繁简配置？
+### Q4: 支持的转换方向
 
-当前支持：
-- `t2s` / `tw2s`：繁体（台湾）→ 简体
-- `s2t` / `s2tw`：简体 → 繁体（台湾）
-
-可以通过扩展 `OpenCCInterface` 添加更多配置（如 hk2s, jp2s 等）。
+- `tw2s` / `t2s`：繁体 → 简体
+- `s2tw` / `s2t`：简体 → 繁体
 
 ---
 
@@ -469,15 +360,14 @@ guji-diff/
 │   │       ├── opencc/           # ⭐ 平台自适应 OpenCC
 │   │       │   ├── opencc.dart           # 条件导出
 │   │       │   ├── opencc_interface.dart  # 统一接口
-│   │       │   ├── opencc_native.dart     # 原生实现
-│   │       │   └── opencc_web.dart        # Web 实现
+│   │       │   ├── opencc_native.dart     # 原生实现 (FFI)
+│   │       │   └── opencc_web.dart        # Web 实现 (dart:js_interop)
 │   │       ├── text_normalizer.dart       # 文本归一化
 │   │       ├── verbatim_collation.dart    # 逐字比对
 │   │       ├── structural_collation.dart  # 结构化比对
 │   │       └── statistical_analysis.dart  # 统计分析
 │   ├── web/
-│   │   ├── index.html            # Web 入口（引入 OpenCC-JS）
-│   │   └── opencc_bridge.js      # ⭐ JS 桥接文件
+│   │   └── index.html            # Web 入口（引入 OpenCC-JS）
 │   ├── bin/
 │   │   └── guji_diff.dart        # CLI 工具
 │   └── test/                     # 单元测试
