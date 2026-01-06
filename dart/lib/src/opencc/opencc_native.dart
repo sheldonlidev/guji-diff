@@ -37,7 +37,8 @@ class OpenCCNative implements OpenCCInterface {
       throw OpenCCNotAvailableException(
         message: 'OpenCC native library is not available',
         platform: 'Native (FFI)',
-        details: _lastError ??
+        details:
+            _lastError ??
             'OpenCC requires CMake to build native assets.\n'
                 'Common causes:\n'
                 '  1. CMake is not installed\n'
@@ -91,6 +92,9 @@ class OpenCCNative implements OpenCCInterface {
 
   @override
   String getPlatformName() => 'Native (OpenCC FFI)';
+
+  @override
+  Future<void> untilReady() async {}
 }
 
 /// 创建原生平台的 OpenCC 实例

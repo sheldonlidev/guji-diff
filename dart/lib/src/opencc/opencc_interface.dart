@@ -29,6 +29,10 @@ abstract class OpenCCInterface {
 
   /// 获取当前平台名称（用于诊断）
   String getPlatformName();
+
+  /// 等待 OpenCC 准备就绪
+  /// 在 Web 上等待脚本加载，在原生平台上立即完成
+  Future<void> untilReady();
 }
 
 /// OpenCC 不可用异常

@@ -98,6 +98,12 @@ class TextNormalizer {
     _openccInstance = null;
   }
 
+  /// 确保 OpenCC 准备就绪
+  static Future<void> ensureReady() async {
+    _openccInstance ??= createOpenCC();
+    await _openccInstance!.untilReady();
+  }
+
   /// 获取当前 OpenCC 状态（用于诊断）
   static OpenCCStatus? get openccStatus {
     _openccInstance ??= createOpenCC();

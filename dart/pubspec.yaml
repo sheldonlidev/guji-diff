@@ -22,6 +22,7 @@ dependencies:
     sdk: flutter
   diff_match_patch: ^0.4.1
   opencc: ^1.1.0
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
