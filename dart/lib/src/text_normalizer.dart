@@ -112,33 +112,6 @@ class TextNormalizer {
     }
   }
 
-  /// 使用 OpenCC 进行繁简转换（旧版本，保持向后兼容）
-  /// 如果 OpenCC 不可用，会抛出详细的错误信息
-  static String _convertTraditionalToSimplified(String text) {
-    // 懒加载 OpenCC 实例
-    _openccInstance ??= createOpenCC();
-
-    // 检查 OpenCC 是否可用
-    if (!_openccInstance!.isAvailable()) {
-      throw StateError(
-        'OpenCC is not available on this platform. '
-        'Platform: ${_openccInstance!.getPlatformName()}\n'
-        'See TextNormalizer logs for details.',
-      );
-    }
-
-    try {
-      return _openccInstance!.traditionalToSimplified(text);
-    } on OpenCCNotAvailableException catch (e) {
-      // 记录详细错误
-      _logError('OpenCC conversion failed:\n$e');
-      rethrow;
-    } catch (e) {
-      _logError('Unexpected error during conversion: $e');
-      rethrow;
-    }
-  }
-
   /// 应用异体字映射（带位置追踪）
   /// 用于 OpenCC 不支持的古籍异体字
   /// 这是1:1字符替换，所以位置数组保持不变
@@ -237,9 +210,16 @@ class NormalizationResult {
 
   /// 根据归一化文本的位置范围，提取原文片段
   String extractOriginal(String originalText, int normStart, int normEnd) {
+    // 防御性处理：如果 normEnd 超出映射数组长度，截断到末尾
+    // 这可能发生在 OpenCC 转换不是严格 1:1 的情况下
+    if (normEnd > positions.length) {
+      normEnd = positions.length;
+    }
+
     if (normStart < 0 || normEnd > positions.length || normStart > normEnd) {
       throw RangeError(
-        'Invalid normalized position range: [$normStart, $normEnd)',
+        'Invalid normalized position range: [$normStart, $normEnd). '
+        'Positions length: ${positions.length}',
       );
     }
 

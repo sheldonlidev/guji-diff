@@ -1,3 +1,9 @@
+## 0.1.2
+- Improved `README.md` for better clarity.
+- Updated `position-mapping-algorithm.md` to reflect latest implementation details.
+- Code cleanup in `TextNormalizer`.
+- Allow output both original text and compared text.
+
 ## 0.1.1
 
 * Refactored collation feature tests for better coverage.

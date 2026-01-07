@@ -85,6 +85,10 @@ class ChangePatternAnalyzer {
       }
     }
 
-    return patterns;
+    // Sort patterns by frequency (descending)
+    final sortedEntries = patterns.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Map.fromEntries(sortedEntries);
   }
 }
