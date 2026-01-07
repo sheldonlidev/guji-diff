@@ -389,4 +389,86 @@ void main() {
       expect(output, '天地人和，万物生');
     });
   });
+
+  group('TextNormalizer - Position Mapping', () {
+    test('Position mapping - variant char replacement', () {
+      final input = '箇中之道';
+      final result = TextNormalizer.normalizeWithMapping(
+        input,
+        ignorePunctuation: false,
+        ignoreTraditional: false,
+        ignoreVariants: true,
+      );
+
+      expect(result.normalized, '个中之道');
+      expect(result.positions.length, 4);
+      expect(result.extractOriginal(input, 0, 1), '箇');
+      expect(result.extractOriginal(input, 1, 2), '中');
+      expect(result.extractOriginal(input, 0, 4), '箇中之道');
+    });
+
+    test('Position mapping - punctuation removal', () {
+      final input = '學，問！';
+      final result = TextNormalizer.normalizeWithMapping(
+        input,
+        ignorePunctuation: true,
+        ignoreTraditional: false,
+        ignoreVariants: false,
+      );
+
+      expect(result.normalized, '學問');
+      expect(result.positions.length, 2);
+      // 修改后的行为：extractOriginal使用下一个位置的start作为end
+      // 因此会包含字符之间和字符之后的标点
+      expect(result.extractOriginal(input, 0, 1), '學，'); // 包含到下一个字符之前的标点
+      expect(result.extractOriginal(input, 1, 2), '問！'); // 包含尾部标点
+      // 提取整个范围包含所有标点
+      expect(result.extractOriginal(input, 0, 2), '學，問！');
+    });
+
+    test('Position mapping - combined transformations', () {
+      final input = '箇中學問，深不可測！';
+      final result = TextNormalizer.normalizeWithMapping(
+        input,
+        ignorePunctuation: true,
+        ignoreTraditional: false,
+        ignoreVariants: true,
+      );
+
+      expect(result.normalized, '个中學問深不可測');
+      // 修改后的行为：extractOriginal包含到下一个位置之前的内容
+      expect(result.extractOriginal(input, 0, 1), '箇');
+      expect(result.extractOriginal(input, 2, 3), '學');
+      expect(result.extractOriginal(input, 4, 5), '深');
+      // Extract range spanning punctuation - 现在会包含标点
+      expect(result.extractOriginal(input, 0, 4), '箇中學問，');
+      expect(result.extractOriginal(input, 3, 8), '問，深不可測！');
+    });
+
+    test('Position mapping - empty string', () {
+      final result = TextNormalizer.normalizeWithMapping(
+        '',
+        ignorePunctuation: true,
+        ignoreTraditional: false,
+        ignoreVariants: true,
+      );
+
+      expect(result.normalized, '');
+      expect(result.positions, isEmpty);
+      expect(result.extractOriginal('', 0, 0), '');
+    });
+
+    test('Position mapping - all punctuation removed', () {
+      final input = '，。！？';
+      final result = TextNormalizer.normalizeWithMapping(
+        input,
+        ignorePunctuation: true,
+        ignoreTraditional: false,
+        ignoreVariants: false,
+      );
+
+      expect(result.normalized, '');
+      expect(result.positions, isEmpty);
+    });
+  });
 }
