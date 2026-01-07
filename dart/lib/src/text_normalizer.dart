@@ -11,7 +11,6 @@ class TextNormalizer {
 
   /// 异体字映射表
   /// 用于 OpenCC 不支持的古籍异体字
-  /// 这些字符即使在 OpenCC 中也可能没有对应的转换
   static const Map<String, String> _variantCharMap = {
     '箇': '个',
     // 可以继续添加更多古籍异体字
@@ -55,7 +54,10 @@ class TextNormalizer {
     // 1. 先处理异体字（在繁简转换之前）
     //    因为某些异体字 OpenCC 可能不认识
     if (ignoreVariants) {
-      final variantResult = _applyVariantMappingWithPositions(result, positions);
+      final variantResult = _applyVariantMappingWithPositions(
+        result,
+        positions,
+      );
       result = variantResult.normalized;
       positions = variantResult.positions;
     }
@@ -159,16 +161,6 @@ class TextNormalizer {
     return NormalizationResult(buffer.toString(), newPositions);
   }
 
-  /// 应用异体字映射（旧版本，保持向后兼容）
-  /// 用于 OpenCC 不支持的古籍异体字
-  static String _applyVariantMapping(String text) {
-    String result = text;
-    _variantCharMap.forEach((variant, standard) {
-      result = result.replaceAll(variant, standard);
-    });
-    return result;
-  }
-
   /// 删除标点符号（带位置追踪）
   /// 这会删除字符，所以需要缩减位置数组
   static NormalizationResult _removePunctuationWithPositions(
@@ -246,7 +238,9 @@ class NormalizationResult {
   /// 根据归一化文本的位置范围，提取原文片段
   String extractOriginal(String originalText, int normStart, int normEnd) {
     if (normStart < 0 || normEnd > positions.length || normStart > normEnd) {
-      throw RangeError('Invalid normalized position range: [$normStart, $normEnd)');
+      throw RangeError(
+        'Invalid normalized position range: [$normStart, $normEnd)',
+      );
     }
 
     // 空范围返回空字符串
