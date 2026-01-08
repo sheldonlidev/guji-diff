@@ -10,7 +10,7 @@ class CollationChange {
   final CollationType type;
   final String text;
 
-  CollationChange({required this.type, required this.text});
+  const CollationChange({required this.type, required this.text});
 
   @override
   String toString() => '${type.name}: $text';
@@ -119,22 +119,19 @@ class VerbatimCollation {
               : '';
 
           // Text1视图：EQUAL（保留）
-          text1View.add(CollationChange(
-            type: CollationType.equal,
-            text: text1Original,
-          ));
+          text1View.add(
+            CollationChange(type: CollationType.equal, text: text1Original),
+          );
 
           // Text2视图：EQUAL（保留）
-          text2View.add(CollationChange(
-            type: CollationType.equal,
-            text: text2Original,
-          ));
+          text2View.add(
+            CollationChange(type: CollationType.equal, text: text2Original),
+          );
 
           // Merged视图：使用text1的原文
-          mergedView.add(CollationChange(
-            type: CollationType.equal,
-            text: text1Original,
-          ));
+          mergedView.add(
+            CollationChange(type: CollationType.equal, text: text1Original),
+          );
 
           pos1 += length;
           pos2 += length;
@@ -147,18 +144,16 @@ class VerbatimCollation {
               : '';
 
           // Text1视图：DELETE（被删除）
-          text1View.add(CollationChange(
-            type: CollationType.delete,
-            text: text1Original,
-          ));
+          text1View.add(
+            CollationChange(type: CollationType.delete, text: text1Original),
+          );
 
           // Text2视图：不添加（因为text2中没有这部分）
 
           // Merged视图：DELETE
-          mergedView.add(CollationChange(
-            type: CollationType.delete,
-            text: text1Original,
-          ));
+          mergedView.add(
+            CollationChange(type: CollationType.delete, text: text1Original),
+          );
 
           pos1 += length;
           break;
@@ -172,16 +167,14 @@ class VerbatimCollation {
           // Text1视图：不添加（因为text1中没有这部分）
 
           // Text2视图：INSERT（新增）
-          text2View.add(CollationChange(
-            type: CollationType.insert,
-            text: text2Original,
-          ));
+          text2View.add(
+            CollationChange(type: CollationType.insert, text: text2Original),
+          );
 
           // Merged视图：INSERT
-          mergedView.add(CollationChange(
-            type: CollationType.insert,
-            text: text2Original,
-          ));
+          mergedView.add(
+            CollationChange(type: CollationType.insert, text: text2Original),
+          );
 
           pos2 += length;
           break;
@@ -216,10 +209,9 @@ class VerbatimCollation {
           final originalText = length > 0
               ? norm1.extractOriginal(originalText1, pos1, pos1 + length)
               : '';
-          result.add(CollationChange(
-            type: CollationType.equal,
-            text: originalText,
-          ));
+          result.add(
+            CollationChange(type: CollationType.equal, text: originalText),
+          );
           pos1 += length;
           pos2 += length;
           break;
@@ -229,10 +221,9 @@ class VerbatimCollation {
           final originalText = length > 0
               ? norm1.extractOriginal(originalText1, pos1, pos1 + length)
               : '';
-          result.add(CollationChange(
-            type: CollationType.delete,
-            text: originalText,
-          ));
+          result.add(
+            CollationChange(type: CollationType.delete, text: originalText),
+          );
           pos1 += length;
           break;
 
@@ -241,10 +232,9 @@ class VerbatimCollation {
           final originalText = length > 0
               ? norm2.extractOriginal(originalText2, pos2, pos2 + length)
               : '';
-          result.add(CollationChange(
-            type: CollationType.insert,
-            text: originalText,
-          ));
+          result.add(
+            CollationChange(type: CollationType.insert, text: originalText),
+          );
           pos2 += length;
           break;
       }
