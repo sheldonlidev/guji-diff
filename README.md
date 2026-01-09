@@ -1,449 +1,102 @@
-# Guji-Diff
+# 📖 Guji-Diff (古籍校勘引擎)
 
 [![pub package](https://img.shields.io/pub/v/guji_diff.svg)](https://pub.dev/packages/guji_diff)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-古籍文本校勘代码库 (Ancient Text Collation Library)
+专为古籍与现代文本校勘设计的 **智能对比引擎**。
 
-给定两段或多段文字，`guji-diff` 能够高效输出它们之间的异同。该库专为古籍处理设计，支持繁简转换、异体字识别、标点忽略等高级功能，并**支持多平台部署**（原生应用和 Web）。
-
-## 🌟 核心特性
-
-- **多粒度校勘**：支持从宏观结构到微观文字的全方位比较
-- **古籍专项优化**：
-  - **繁简兼读**：可配置繁简体对应，即使字形不同也视为相同
-  - **异体/生僻字识别**：智能处理古籍中常见的异体字形
-  - **标点策略**：支持在比较时忽略标点符号，专注于文本本身的差异
-- **平台自适应**：原生应用使用 OpenCC FFI，Web 应用自动使用 OpenCC-JS
-- **高性能算法**：底层基于 Google 的 `diff-match-patch` 算法
-- **多维度统计**：提供文本相似度计算，并自动识别并统计高频出现的改动模式
-
-## 📦 平台支持
-
-| 平台 | 繁简转换 | 说明 |
-|------|---------|------|
-| **Windows/Mac/Linux** | ✅ OpenCC FFI | 需要安装 CMake |
-| **iOS/Android** | ✅ OpenCC FFI | 自动编译 |
-| **Web** | ✅ OpenCC-JS | 需配置 HTML |
-
-## 🛠 校勘模式
-
-### 1. 逐字校勘 (Verbatim Collation)
-直接比较两段文本，精确找出每一个字符的增加、删除或替换。
-
-**输出格式**：`Unified Diff`
-- 经典的 Git/Linux 风格
-- 以行为单位，使用 `+` 表示新增，`-` 表示删除
-
-### 2. 结构性校勘 (Structural Collation)
-针对已结构化（章节、段落、句子）的文本进行分层比较。
-
-**输出格式**：`JSON Diff` (基于 RFC 6902 JSON Patch)
-- 适用于程序自动化处理和数据库存储
-- 提供 `add`, `remove`, `replace` 等操作命令
-
-## 📊 统计与分析
-
-- **匹配度评分**：基于字符变动情况计算文本相似度百分比
-- **模式识别**：自动统计高频出现的修改
+Guji-Diff 不仅仅是一个 Diff 工具，它像一位精通古文的学者，能够智能识别异体字、繁简字，并提供从微观字形到宏观结构的立体化校勘结果。
 
 ---
 
-## 🚀 快速开始
+## 核心功能
 
-### 安装
+*   **智能校勘**：调用opencc繁简转换引擎，可选择忽略繁简差异。
+*   **三维视图**：支持生成 **底本 (Base)**、**对校本 (Current)**、**合并 (Merged)** 三种视角的校勘结果。
+*   **深度分析**：自动计算文本相似度，并统计高频修改模式（如 "得" -> "德" 出现了 10 次）。
 
-**从 pub.dev 安装（推荐）**：
+##  快速开始
 
-在你的 `pubspec.yaml` 中添加：
+### 1. 安装
+
+在 `pubspec.yaml` 中添加依赖：
 
 ```yaml
 dependencies:
   guji_diff: ^0.1.0
 ```
 
-然后运行：
-
-```bash
-flutter pub get
-```
-
-**其他安装方式**：
-
-```yaml
-dependencies:
-  # 从 Git 仓库安装
-  guji_diff:
-    git:
-      url: https://github.com/sheldonlidev/guji-diff.git
-      path: dart
-      ref: main
-
-  # 本地开发
-  guji_diff:
-    path: ../guji-diff/dart
-```
-
----
-
-## 💻 原生平台使用（Windows/Mac/Linux/iOS/Android）
-
-### 前置要求
-
-原生平台需要 **CMake** 来编译 OpenCC 库：
-
-```bash
-# Windows (使用 Chocolatey)
-choco install cmake
-
-# macOS (使用 Homebrew)
-brew install cmake
-
-# Linux (Ubuntu/Debian)
-sudo apt-get install cmake
-
-# 验证安装
-cmake --version
-```
-
-### 代码示例
+### 2. 使用示例
 
 ```dart
 import 'package:guji_diff/guji_diff.dart';
 
 void main() {
-  // 逐字校勘（自动使用 OpenCC FFI）
-  final collation = VerbatimCollation(
-    '學而時習之，不亦說乎',
-    '学而时习之，不亦说乎',
-    options: CollationOptions(
-      ignorePunctuation: true,   // 忽略标点
-      ignoreTraditional: true,   // 繁简等价（使用 OpenCC FFI）
-      ignoreVariants: true,      // 异体字映射
-    ),
-  );
-
-  final diffs = collation.getDiffs();
-  print('相似度: ${collation.getSimilarity()}');
-}
-```
-
-### 运行应用
-
-```bash
-# 桌面应用
-flutter run -d windows  # 或 macos/linux
-
-# 移动应用
-flutter run -d ios      # 或 android
-```
-
----
-
-## 🌐 Web 平台使用
-
-### 配置 HTML
-
-在 `web/index.html` 的 `<head>` 部分添加 OpenCC-JS：
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
-```
-
-就这么简单！代码与原生平台完全一样：
-
-```dart
-import 'package:guji_diff/guji_diff.dart';
-
-final collation = VerbatimCollation(
-  '學而時習之',
-  '学而时习之',
-  options: CollationOptions(ignoreTraditional: true),  // 自动使用 OpenCC-JS
-);
-```
-
-### 编译运行
-
-```bash
-flutter run -d chrome      # 开发
-flutter build web          # 生产构建
-```
-
----
-
-## 📖 API 使用示例
-
-### 示例 1: 逐字校勘（繁简等价）
-
-```dart
-import 'package:guji_diff/guji_diff.dart';
-
-void main() {
+  // 1. 创建校勘引擎
+  // 示例文本：原文是繁体且有标点，新版本是简体且无标点
   final engine = VerbatimCollation(
     '學而時習之，不亦說乎？',
-    '学而时习之，不亦说乎？',
+    '学而时习之不亦说乎',
     options: CollationOptions(
-      ignorePunctuation: true,   // 忽略标点
-      ignoreTraditional: true,   // 繁简等价
-      ignoreVariants: false,
+      ignorePunctuation: true, // 忽略标点差异
+      ignoreTraditional: true, // 忽略繁简差异
     ),
   );
 
-  // 获取差异列表
-  final diffs = engine.getDiffs();
-  for (var diff in diffs) {
-    print('${diff.operation}: ${diff.text}');
-  }
+  // 2. 获取三种视角的校勘结果
+  final result = engine.compareWithFullContext(
+    engine.text1,
+    engine.text2,
+  );
 
-  // 计算相似度
-  print('相似度: ${engine.getSimilarity()}');
+  // 3. 打印合并视图 (Merged View) - 以底本为基础，展示增删
+  print('--- 校勘结果 ---');
+  for (final change in result.mergedView) {
+    switch (change.type) {
+      case CollationType.equal:
+        print(change.text);         // 相同部分 (显示底本原文)
+        break;
+      case CollationType.insert:
+        print('[+${change.text}]'); // 新增部分
+        break;
+      case CollationType.delete:
+        print('[-${change.text}]'); // 删除部分
+        break;
+    }
+  }
+  
+  // 4. 获取相似度评分
+  print('\n相似度: ${(engine.getSimilarity() * 100).toStringAsFixed(1)}%');
 }
 ```
 
-### 示例 2: 异体字处理
+## �️ 命令行工具
 
-```dart
-final engine = VerbatimCollation(
-  '箇中之道',  // 使用异体字 "箇"
-  '个中之道',  // 标准字 "个"
-  options: CollationOptions(
-    ignoreVariants: true,  // 异体字等价
-  ),
-);
-
-print('匹配: ${engine.getSimilarity() == 1.0}');  // true
-```
-
-### 示例 3: 结构化校勘
-
-```dart
-final doc1 = Document(chapters: [
-  Chapter(title: '第一章', paragraphs: [
-    Paragraph(id: 'p1', content: '大学之道，在明明得。'),
-  ])
-]);
-
-final doc2 = Document(chapters: [
-  Chapter(title: '第一章', paragraphs: [
-    Paragraph(id: 'p1', content: '大学之道，在明明德。'),
-  ])
-]);
-
-final engine = StructuralCollation();
-final diffs = engine.compareDocuments(doc1, doc2);
-
-// 转换为 JSON Patch (RFC 6902)
-final patch = JsonPatchConverter.convert(diffs);
-print(patch);
-// 输出: [{"op":"replace","path":"/chapters/0/paragraphs/0/content","value":"大学之道，在明明德。"}]
-```
-
-### 示例 4: 统计分析
-
-```dart
-final analysis = StatisticalAnalysis.analyze('原文', '修订版', options);
-
-print('相似度: ${analysis.similarity}');
-print('总变更数: ${analysis.totalChanges}');
-print('模式统计: ${analysis.patterns}');
-// 输出: {得->德: 1}
-```
-
----
-
-## 🔧 命令行工具
-
-### 安装
+Guji-Diff 也可以作为命令行工具使用，快速分析文本差异。
 
 ```bash
-cd dart
-dart pub get
+# 激活工具 (如果在本地开发)
+dart pub global activate -s path ./dart
+
+# 运行比较 (自动忽略标点和繁简)
+guji_diff "大学之道" "大學之道。" --analyze
 ```
 
-### 使用示例
-
-#### 1. 逐字比对
-
-```bash
-# 基础比对
-dart run bin/guji_diff.dart "大学之道" "大学之门"
-
-# 繁简等价
-dart run bin/guji_diff.dart "學而時習之" "学而时习之" --ignore-traditional
-
-# 忽略标点
-dart run bin/guji_diff.dart "学习，思考。" "学习思考" --ignore-punctuation
-```
-
-#### 2. 统计分析
-
-```bash
-dart run bin/guji_diff.dart "大学之道在明明得" "大学之道在明明德" --analyze
-```
-
-输出：
+**输出示例**：
 ```json
 {
-  "similarity": 0.875,
-  "patterns": {
-    "得->德": 1
-  },
-  "totalChanges": 1
+  "similarity": 1.0,
+  "diffs": [
+    {"op": "equal", "text": "大学之道"}
+  ]
 }
 ```
 
-#### 3. 结构化比对
+## 📚 更多文档
 
-```bash
-dart run bin/guji_diff.dart doc1.json doc2.json --structural
-```
-
----
-
-## 🔍 诊断工具
-
-检查 OpenCC 状态：
-
-```dart
-print(TextNormalizer.getPlatformName());  // "Native (OpenCC FFI)" 或 "Web (OpenCC-JS, Automated)"
-print(TextNormalizer.openccStatus);       // OpenCCStatus.available
-```
-
-Web 浏览器调试（在控制台）：
-
-```javascript
-console.log(typeof OpenCC);                              // 'object'
-const converter = OpenCC.Converter({ from: 'tw', to: 's' });
-console.log(converter('學習'));                           // '学习'
-```
+*   [Web 部署指南](WEB_DEPLOYMENT_GUIDE.md)
+*   [核心算法原理](dart/position-mapping-algorithm.md)
 
 ---
 
-## ⚠️ 常见问题
-
-### Q1: 原生平台编译失败
-
-确保安装了 CMake：
-```bash
-cmake --version  # 检查是否已安装
-flutter pub get  # 重新编译
-```
-
-### Q2: Web 平台转换不工作
-
-在浏览器控制台检查：`typeof OpenCC` 应返回 `'object'`
-
-### Q3: 离线部署（不用 CDN）
-
-```bash
-npm install opencc-js
-cp node_modules/opencc-js/dist/umd/full.js web/
-```
-
-在 HTML 中改用：`<script src="full.js"></script>`
-
-### Q4: 支持的转换方向
-
-- `tw2s` / `t2s`：繁体 → 简体
-- `s2tw` / `s2t`：简体 → 繁体
-
----
-
-## 📂 项目结构
-
-```
-guji-diff/
-├── dart/                          # Dart/Flutter 实现
-│   ├── lib/
-│   │   ├── guji_diff.dart        # 公共 API
-│   │   └── src/
-│   │       ├── opencc/           # ⭐ 平台自适应 OpenCC
-│   │       │   ├── opencc.dart           # 条件导出
-│   │       │   ├── opencc_interface.dart  # 统一接口
-│   │       │   ├── opencc_native.dart     # 原生实现 (FFI)
-│   │       │   └── opencc_web.dart        # Web 实现 (dart:js_interop)
-│   │       ├── text_normalizer.dart       # 文本归一化
-│   │       ├── verbatim_collation.dart    # 逐字比对
-│   │       ├── structural_collation.dart  # 结构化比对
-│   │       └── statistical_analysis.dart  # 统计分析
-│   ├── web/
-│   │   └── index.html            # Web 入口（引入 OpenCC-JS）
-│   ├── bin/
-│   │   └── guji_diff.dart        # CLI 工具
-│   └── test/                     # 单元测试
-└── README.md                      # 本文件
-```
-
----
-
-## 📦 Package 信息
-
-- **Package 名称**: `guji_diff`
-- **当前版本**: `0.1.0`
-- **pub.dev 链接**: [https://pub.dev/packages/guji_diff](https://pub.dev/packages/guji_diff)
-- **API 文档**: [https://pub.dev/documentation/guji_diff/latest/](https://pub.dev/documentation/guji_diff/latest/)
-- **License**: Apache 2.0
-
-### 版本历史
-
-#### 0.1.0 (2026-01-05)
-- ✅ 初始发布
-- ✅ 逐字校勘功能
-- ✅ 结构化校勘功能
-- ✅ 统计分析和模式识别
-- ✅ 平台自适应 OpenCC 集成（原生 FFI + Web JS）
-- ✅ 繁简转换支持
-- ✅ 异体字映射
-- ✅ 标点处理选项
-
----
-
-## 📚 相关文档
-
-- [WEB_DEPLOYMENT_GUIDE.md](WEB_DEPLOYMENT_GUIDE.md) - Web 部署详细指南
-- [PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md) - pub.dev 发布指南
-- [progress/platform_adaptive_opencc.md](progress/platform_adaptive_opencc.md) - 平台自适应技术实现
-- [progress/task_list.md](progress/task_list.md) - 项目开发进度
-
----
-
-## 🙏 致谢
-
-- 底层算法：[google/diff-match-patch](https://github.com/google/diff-match-patch)
-- 繁简转换（原生）：[opencc-dart](https://github.com/lindeer/opencc-dart)
-- 繁简转换（Web）：[opencc-js](https://github.com/nk2028/opencc-js)
-
----
-
-## 📄 许可证
-
-Apache License 2.0
-
-详见 [LICENSE](LICENSE) 文件。
-
----
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-**开发环境设置**：
-```bash
-# 克隆仓库
-git clone https://github.com/your-username/guji-diff.git
-cd guji-diff/dart
-
-# 安装依赖
-flutter pub get
-
-# 运行测试
-flutter test
-
-# 运行示例
-flutter run -d chrome  # Web
-flutter run -d windows # 桌面
-```
-
----
-
-**如有问题，请查看 [WEB_DEPLOYMENT_GUIDE.md](WEB_DEPLOYMENT_GUIDE.md) 或提交 Issue。**
+Built with ❤️ by Guji Team.
