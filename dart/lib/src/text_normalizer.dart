@@ -230,11 +230,9 @@ class NormalizationResult {
 
     final startPos = positions[normStart].start;
 
-    // 关键修改：使用下一个字符的start作为end，以包含中间的标点
-    // 如果是最后一个字符，则使用原文总长度以包含尾部标点
-    final endPos = normEnd < positions.length
-        ? positions[normEnd].start
-        : originalText.length;
+    // 使用范围内最后一个字符的 end 位置
+    // 这样可以正确排除中间被忽略的标点符号
+    final endPos = positions[normEnd - 1].end;
 
     return originalText.substring(startPos, endPos);
   }

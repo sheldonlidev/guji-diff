@@ -418,12 +418,11 @@ void main() {
 
       expect(result.normalized, '學問');
       expect(result.positions.length, 2);
-      // 修改后的行为：extractOriginal使用下一个位置的start作为end
-      // 因此会包含字符之间和字符之后的标点
-      expect(result.extractOriginal(input, 0, 1), '學，'); // 包含到下一个字符之前的标点
-      expect(result.extractOriginal(input, 1, 2), '問！'); // 包含尾部标点
-      // 提取整个范围包含所有标点
-      expect(result.extractOriginal(input, 0, 2), '學，問！');
+      // 修正后的行为：extractOriginal只提取字符本身，不包含标点
+      expect(result.extractOriginal(input, 0, 1), '學'); // 不包含标点
+      expect(result.extractOriginal(input, 1, 2), '問'); // 不包含标点
+      // 提取整个范围也不包含标点
+      expect(result.extractOriginal(input, 0, 2), '學，問');
     });
 
     test('Position mapping - combined transformations', () {
@@ -436,13 +435,13 @@ void main() {
       );
 
       expect(result.normalized, '个中學問深不可測');
-      // 修改后的行为：extractOriginal包含到下一个位置之前的内容
+      // 修正后的行为：extractOriginal只提取字符本身，不包含标点
       expect(result.extractOriginal(input, 0, 1), '箇');
       expect(result.extractOriginal(input, 2, 3), '學');
       expect(result.extractOriginal(input, 4, 5), '深');
-      // Extract range spanning punctuation - 现在会包含标点
-      expect(result.extractOriginal(input, 0, 4), '箇中學問，');
-      expect(result.extractOriginal(input, 3, 8), '問，深不可測！');
+      // Extract range spanning punctuation - 不包含中间和尾部标点
+      expect(result.extractOriginal(input, 0, 4), '箇中學問');
+      expect(result.extractOriginal(input, 3, 8), '問，深不可測');
     });
 
     test('Position mapping - empty string', () {

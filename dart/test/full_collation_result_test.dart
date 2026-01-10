@@ -54,20 +54,20 @@ void main() {
         try {
           final result = engine.compareWithFullContext(text1, text2, options: options);
 
-          // Text1视图：应该显示text1的原文（包括标点）
+          // Text1视图：应该显示text1的原文（忽略标点后不包含尾部标点）
           expect(result.text1View.length, 1);
           expect(result.text1View[0].type, CollationType.equal);
-          expect(result.text1View[0].text, '學，問！');  // 保留text1的标点
+          expect(result.text1View[0].text, '學，問');  // 包含中间标点，不包含尾部标点
 
-          // Text2视图：应该显示text2的原文（包括标点）
+          // Text2视图：应该显示text2的原文（忽略标点后不包含尾部标点）
           expect(result.text2View.length, 1);
           expect(result.text2View[0].type, CollationType.equal);
-          expect(result.text2View[0].text, '学问？');  // 保留text2的标点
+          expect(result.text2View[0].text, '学问');  // 不包含尾部标点
 
           // Merged视图：使用text1的原文
           expect(result.mergedView.length, 1);
           expect(result.mergedView[0].type, CollationType.equal);
-          expect(result.mergedView[0].text, '學，問！');  // Merged用text1
+          expect(result.mergedView[0].text, '學，問');  // Merged用text1
         } catch (e) {
           expect(e, isA<StateError>());
         }
