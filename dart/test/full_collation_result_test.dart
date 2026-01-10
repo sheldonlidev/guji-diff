@@ -54,20 +54,20 @@ void main() {
         try {
           final result = engine.compareWithFullContext(text1, text2, options: options);
 
-          // Text1视图：应该显示text1的原文（包括标点）
+          // Text1视图：应该显示text1的原文（忽略标点后不包含尾部标点）
           expect(result.text1View.length, 1);
           expect(result.text1View[0].type, CollationType.equal);
-          expect(result.text1View[0].text, '學，問！');  // 保留text1的标点
+          expect(result.text1View[0].text, '學，問');  // 包含中间标点，不包含尾部标点
 
-          // Text2视图：应该显示text2的原文（包括标点）
+          // Text2视图：应该显示text2的原文（忽略标点后不包含尾部标点）
           expect(result.text2View.length, 1);
           expect(result.text2View[0].type, CollationType.equal);
-          expect(result.text2View[0].text, '学问？');  // 保留text2的标点
+          expect(result.text2View[0].text, '学问');  // 不包含尾部标点
 
           // Merged视图：使用text1的原文
           expect(result.mergedView.length, 1);
           expect(result.mergedView[0].type, CollationType.equal);
-          expect(result.mergedView[0].text, '學，問！');  // Merged用text1
+          expect(result.mergedView[0].text, '學，問');  // Merged用text1
         } catch (e) {
           expect(e, isA<StateError>());
         }
@@ -122,7 +122,7 @@ void main() {
         try {
           final result = engine.compareWithFullContext(text1, text2, options: options);
 
-          // Text1视图：EQUAL(箇中學，) + DELETE(問！)
+          // Text1视图：EQUAL(箇中學，) + DELETE(問) (不包含尾部标点！)
           final text1Equal = result.text1View.where((c) => c.type == CollationType.equal).toList();
           final text1Delete = result.text1View.where((c) => c.type == CollationType.delete).toList();
 
@@ -133,9 +133,9 @@ void main() {
 
           expect(text1Delete.isNotEmpty, isTrue);
           expect(text1Delete[0].text, contains('問'));  // 保留繁体字
-          expect(text1Delete[0].text, contains('！'));  // 保留标点
+          expect(text1Delete[0].text.contains('！'), isFalse);  // 不包含尾部标点
 
-          // Text2视图：EQUAL(个中学) + INSERT(道理？)
+          // Text2视图：EQUAL(个中学) + INSERT(道理) (不包含尾部标点？)
           final text2Equal = result.text2View.where((c) => c.type == CollationType.equal).toList();
           final text2Insert = result.text2View.where((c) => c.type == CollationType.insert).toList();
 
@@ -145,7 +145,7 @@ void main() {
 
           expect(text2Insert.isNotEmpty, isTrue);
           expect(text2Insert[0].text, contains('道理'));  // 保留简体
-          expect(text2Insert[0].text, contains('？'));   // 保留text2的标点
+          expect(text2Insert[0].text.contains('？'), isFalse);   // 不包含尾部标点
 
           // Merged视图：应该使用text1的EQUAL和DELETE，text2的INSERT
           final mergedEqual = result.mergedView.where((c) => c.type == CollationType.equal).toList();
@@ -159,7 +159,7 @@ void main() {
 
           expect(mergedDelete.isNotEmpty, isTrue);
           expect(mergedInsert.isNotEmpty, isTrue);
-          expect(mergedInsert[0].text, contains('？'));  // INSERT用text2的标点
+          expect(mergedInsert[0].text.contains('？'), isFalse);  // INSERT不包含尾部标点
         } catch (e) {
           expect(e, isA<StateError>());
         }
@@ -225,6 +225,39 @@ void main() {
       // Merged视图：EQUAL + INSERT
       expect(result.mergedView.length, 2);
       expect(result.mergedView[1].type, CollationType.insert);
+    });
+
+    test('GitHub Issue #1 - Punctuation not included in diff when ignore mode enabled', () {
+      // 这是GitHub issue #1中报告的bug
+      final text1 = '人不知而不愠，不亦君子乎？';
+      final text2 = '人不知而不慍，不亦君子乎？';
+      final options = CollationOptions(
+        ignorePunctuation: true,
+        ignoreTraditional: false,
+        ignoreVariants: false,
+      );
+
+      final result = engine.compareWithFullContext(text1, text2, options: options);
+
+      // 期望结果：
+      // EQUAL: '人不知而不'
+      // DELETE: '愠'  (注意：不应包含后面的'，')
+      // INSERT: '慍'  (注意：不应包含后面的'，')
+      // EQUAL: '，不亦君子乎' (不包含尾部的'？')
+
+      // 查找DELETE和INSERT的片段
+      final deleteSegments = result.mergedView.where((c) => c.type == CollationType.delete).toList();
+      final insertSegments = result.mergedView.where((c) => c.type == CollationType.insert).toList();
+
+      // DELETE应该只包含'愠'字，不包含标点'，'
+      expect(deleteSegments.length, 1);
+      expect(deleteSegments[0].text, '愠');
+      expect(deleteSegments[0].text.contains('，'), isFalse);
+
+      // INSERT应该只包含'慍'字，不包含标点'，'
+      expect(insertSegments.length, 1);
+      expect(insertSegments[0].text, '慍');
+      expect(insertSegments[0].text.contains('，'), isFalse);
     });
   });
 }

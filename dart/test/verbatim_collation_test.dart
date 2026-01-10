@@ -249,10 +249,11 @@ void main() {
         orElse: () => CollationChange(type: CollationType.equal, text: ''),
       );
 
-      // INSERT should show text2's original with punctuation preserved
-      expect(insertChange.text, '問，深！');
-      expect(insertChange.text, contains('，')); // Contains comma
-      expect(insertChange.text, contains('！')); // Contains exclamation
+      // INSERT should show text2's original with internal punctuation preserved
+      // but not trailing punctuation that follows the last normalized character
+      expect(insertChange.text, '問，深');
+      expect(insertChange.text, contains('，')); // Contains comma (internal)
+      expect(insertChange.text.contains('！'), isFalse); // Does NOT contain trailing punctuation
     });
 
     test('INSERT preserves text2 traditional chars even when ignoreTraditional=true', () {
@@ -414,8 +415,8 @@ void main() {
       // 忽略标点后应该完全相同，产生一个EQUAL段落
       expect(changes.length, 1);
       expect(changes[0].type, CollationType.equal);
-      // EQUAL应该显示text1的原始形式（包括text1的标点）
-      expect(changes[0].text, '天地人和。');  // text1的句号，不是text2的感叹号
+      // EQUAL应该显示text1的原始形式（不包括尾部标点）
+      expect(changes[0].text, '天地人和');  // 不包括尾部标点
     });
   });
 }
