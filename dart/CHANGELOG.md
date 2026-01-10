@@ -1,3 +1,8 @@
+## 0.2.0
+- **Fix (Issue #4)**: Improved newline alignment. Newlines present in both texts are now correctly aligned as EQUAL anchors.
+- **Fix (Issue #3)**: Added robustness to `TextNormalizer` to prevent crashes when traditional/simplified conversion alters string length.
+- Added unit tests for newline alignment logic.
+
 ## 0.1.2
 - Improved `README.md` for better clarity.
 - Updated `position-mapping-algorithm.md` to reflect latest implementation details.

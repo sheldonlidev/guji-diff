@@ -1,6 +1,6 @@
 name: guji_diff
 description: "A robust collation engine for ancient and modern Chinese texts, supporting verbatim and structural comparison, variant character normalization, and statistical analysis. Platform-adaptive with native OpenCC FFI and Web OpenCC-JS support."
-version: 0.1.2
+version: 0.2.0
 homepage: https://github.com/sheldonlidev/guji-diff
 repository: https://github.com/sheldonlidev/guji-diff
 issue_tracker: https://github.com/sheldonlidev/guji-diff/issues
