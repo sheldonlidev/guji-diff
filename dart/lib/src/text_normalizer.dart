@@ -301,9 +301,13 @@ class NormalizationResult {
     }
 
     if (normStart < 0 ||
-        normStart > positions.length ||
+        normStart >= positions.length ||
         normEnd > positions.length ||
         normStart > normEnd) {
+      // 如果 normStart 达到末尾，可能是归一化文本略长
+      if (normStart >= positions.length && positions.isNotEmpty) {
+        return '';
+      }
       throw RangeError(
         'Invalid normalized position range: [$normStart, $normEnd). '
         'Positions length: ${positions.length}',
