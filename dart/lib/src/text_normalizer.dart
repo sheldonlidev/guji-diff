@@ -1,3 +1,4 @@
+import 'package:diff_match_patch/diff_match_patch.dart';
 import 'opencc/opencc.dart';
 
 /// 文字归一化处理工具
@@ -100,8 +101,85 @@ class TextNormalizer {
 
     try {
       final simplified = _openccInstance!.traditionalToSimplified(text);
-      // OpenCC 执行1:1字符转换，位置映射保持不变
-      return NormalizationResult(simplified, positions);
+
+      // 如果长度完全一致，通常是 1:1 映射，直接返回（性能优化）
+      if (simplified.length == text.length) {
+        return NormalizationResult(simplified, positions);
+      }
+
+      // 长度不一致时，使用 diff 算法重新构建位置映射
+      // 这能处理 1:N, N:1, N:M 的转换（如代理对、词组简化等）
+      final dmp = DiffMatchPatch();
+      final diffs = dmp.diff(text, simplified);
+      final List<OriginalPosition> newPositions = [];
+
+      int oldIdx = 0;
+      for (int i = 0; i < diffs.length; i++) {
+        final diff = diffs[i];
+        final content = diff.text;
+        final len = content.length;
+
+        if (diff.operation == DIFF_EQUAL) {
+          // 相同部分：直接复制原有的位置信息
+          for (int k = 0; k < len; k++) {
+            if (oldIdx + k < positions.length) {
+              newPositions.add(positions[oldIdx + k]);
+            }
+          }
+          oldIdx += len;
+        } else if (diff.operation == DIFF_DELETE) {
+          // 记录删除块，看后面是否有对应的 INSERT
+          final delLen = len;
+          final startIdx = oldIdx;
+          oldIdx += delLen;
+
+          // 检查下一个是否是 INSERT
+          if (i + 1 < diffs.length && diffs[i + 1].operation == DIFF_INSERT) {
+            final insDiff = diffs[i + 1];
+            final insLen = insDiff.text.length;
+
+            // 获取整个被替换区域的原始位置范围
+            final startOrig = positions[startIdx].start;
+            final endOrig = positions[startIdx + delLen - 1].end;
+
+            // 分配给插入的每一个字符
+            for (int k = 0; k < insLen; k++) {
+              newPositions.add(OriginalPosition(startOrig, endOrig));
+            }
+            // 跳过已处理的 INSERT
+            i++;
+          }
+        } else if (diff.operation == DIFF_INSERT) {
+          // 纯插入（通常不会发生，除非 OpenCC 增加了内容）
+          final startPos = oldIdx > 0 ? positions[oldIdx - 1].end : 0;
+          final endPos = oldIdx < positions.length
+              ? positions[oldIdx].start
+              : (positions.isNotEmpty ? positions.last.end : 0);
+          for (int k = 0; k < len; k++) {
+            newPositions.add(OriginalPosition(startPos, endPos));
+          }
+        }
+      }
+
+      // 兜底方案：如果 diff 重构失败导致长度不匹配
+      if (newPositions.length != simplified.length) {
+        // ... 继续处理以防万一
+        final finalPositions = List<OriginalPosition>.from(newPositions);
+        while (finalPositions.length < simplified.length) {
+          finalPositions.add(
+            positions.isNotEmpty ? positions.last : OriginalPosition(0, 0),
+          );
+        }
+        if (finalPositions.length > simplified.length) {
+          return NormalizationResult(
+            simplified,
+            finalPositions.sublist(0, simplified.length),
+          );
+        }
+        return NormalizationResult(simplified, finalPositions);
+      }
+
+      return NormalizationResult(simplified, newPositions);
     } on OpenCCNotAvailableException catch (e) {
       // 记录详细错误
       _logError('OpenCC conversion failed:\n$e');
@@ -149,7 +227,13 @@ class TextNormalizer {
       // 如果不是标点符号，保留该字符及其位置映射
       if (!_punctuationRegExp.hasMatch(char)) {
         buffer.write(char);
-        newPositions.add(positions[i]);
+        // 防御性：如果 text 比 original 长（理论上 OpenCC 不应如此，但需防范越界）
+        if (i < positions.length) {
+          newPositions.add(positions[i]);
+        } else if (newPositions.isNotEmpty) {
+          // 如果超出长度，延续最后一个映射
+          newPositions.add(newPositions.last);
+        }
       }
       // 如果是标点符号，跳过（不添加到结果中）
     }
@@ -216,7 +300,14 @@ class NormalizationResult {
       normEnd = positions.length;
     }
 
-    if (normStart < 0 || normEnd > positions.length || normStart > normEnd) {
+    if (normStart < 0 ||
+        normStart >= positions.length ||
+        normEnd > positions.length ||
+        normStart > normEnd) {
+      // 如果 normStart 达到末尾，可能是归一化文本略长
+      if (normStart >= positions.length && positions.isNotEmpty) {
+        return '';
+      }
       throw RangeError(
         'Invalid normalized position range: [$normStart, $normEnd). '
         'Positions length: ${positions.length}',
