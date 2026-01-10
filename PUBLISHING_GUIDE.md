@@ -15,10 +15,10 @@ description: >
   normalization, and statistical analysis. Platform-adaptive with
   native OpenCC FFI and Web OpenCC-JS support.
 
-homepage: https://github.com/sheldonlidev/guji-diff
-repository: https://github.com/sheldonlidev/guji-diff
-issue_tracker: https://github.com/sheldonlidev/guji-diff/issues
-documentation: https://github.com/sheldonlidev/guji-diff#readme
+homepage: https://github.com/open-guji/guji-diff
+repository: https://github.com/open-guji/guji-diff
+issue_tracker: https://github.com/open-guji/guji-diff/issues
+documentation: https://github.com/open-guji/guji-diff#readme
 
 # 可选：添加主题标签
 topics:
@@ -275,7 +275,7 @@ dependencies:
 dependencies:
   guji_diff:
     git:
-      url: https://github.com/sheldonlidev/guji-diff.git
+      url: https://github.com/open-guji/guji-diff.git
       path: dart
       ref: main  # 或特定 tag/commit
 ```
